@@ -41,7 +41,7 @@ player = {
         ctx.fillStyle = "white";
         renderCircle(this.pos, 5, true);
 
-        const minLen = getMinDist(this.pos);
+        const minLen = getMinDist(this.pos, false);
 
         ctx.fillStyle = color(255,255,255, 0.4);
         renderCircle(this.pos, minLen, true);
@@ -84,10 +84,10 @@ function init() {
 }
 
 function genShapes() {
-    //Idx 0 will always be the light source
-    circles.push({pos: new Point(0, 0), r: 5, color: {r: 355, g: 355, b: 355}});
+    //Idx 0 will always be the light source, radious = 1 cos raytracing will not detect it
+    circles.push({pos: new Point(5, 5), r: 1, color: {r: 355, g: 355, b: 355}});
     
-    // Circles
+    // Circlesa
     circles.push({pos: new Point(200, 60), r: 2, color: {r: 255, g: 0, b: 0}});
     circles.push({pos: new Point(70, 150), r: 5, color: {r: 0, g: 255, b: 0}});
     circles.push({pos: new Point(300, 10), r: 40, color: {r: 0, g: 0, b: 255}});
@@ -97,7 +97,10 @@ function genShapes() {
     circles.push({pos: new Point(500, 150), r: 12, color: {r: 255, g: 200, b: 155}});
     
     // Rectangles
-    rectangles.push({pos: new Point(100, 200), w: 10, h: 50, color: {r: 100, g: 180, b: 255}});
+    rectangles.push({pos: new Point(-1, 0), w: 1, h: height, color: {r: 100, g: 180, b: 255}});
+    rectangles.push({pos: new Point(0, -5), w: width, h: 5, color: {r: 100, g: 180, b: 255}});
+    rectangles.push({pos: new Point(width, 0), w: 1, h: height, color: {r: 100, g: 180, b: 255}});
+    rectangles.push({pos: new Point(0, height), w: width, h: 5, color: {r: 100, g: 180, b: 255}});
 }
 
 function start() {
@@ -127,12 +130,12 @@ function raytracingCalcAndRender(a, rays, fov) {
     let spacing = fov/rays;
     let pW = width/rays;
     for(j = 0; j < rays; j++) {
-        let collision = traceRay((j*spacing+a) - fov/2, player.pos);
+        let collision = traceRay((j*spacing+a) - fov/2, player.pos, false);
         let d = dist(this.player.pos, collision.pos);
         if(d < 500) {
-            let col = traceRay(Point.a(collision.pos, light), collision.pos, false);
+            let col = traceRay(Point.a(collision.pos, circles[0].pos), collision.pos, true);
             let diff = 0;
-            if(dist(collision.pos, light) > dist(collision.pos, col.pos)) {
+            if(dist(collision.pos, circles[0].pos) > dist(collision.pos, col.pos)) {
                 diff = 100;
             }
             ctx.fillStyle = color(collision.color.r - diff, collision.color.g - diff, collision.color.b - diff, (d/400)*-1+1);
@@ -143,7 +146,7 @@ function raytracingCalcAndRender(a, rays, fov) {
     }
 }
 
-function traceRay(a, p, t) {
+function traceRay(a, p, light) {
     let curr_dist = Number.MAX_VALUE;
     let target = new Point(Math.cos(a)*700, Math.sin(a)*700);
     target.add(p.x, p.y);
@@ -151,22 +154,20 @@ function traceRay(a, p, t) {
     let nextPos = new Point(p.x + Math.cos(a)*1.5, p.y + Math.sin(a)*1.5);
     let c = {};
     while(curr_dist > 1 && dist(p, nextPos) < 50000) {
-        d = getMinDist(nextPos);
+        d = getMinDist(nextPos, light);
         curr_dist = d.len;
         c = d.color;
         nextPos = new Point(nextPos.x + Math.cos(a)*curr_dist, nextPos.y + Math.sin(a)*curr_dist);
     }
-    ctx.fillStyle = "red";
-    if(t) ctx.fillRect(nextPos.x, nextPos.y, 1, 1);
     return {pos: nextPos, color: c};
 }
 
-function getMinDist(p) {
+function getMinDist(p, light) {
     let minLen = Number.MAX_VALUE;
     let color = {r: 0, g: 0, b: 0};
     let idx = null;
 
-    for(i = 0; i < circles.length; i++) {
+    for(i = light ? 1 : 0; i < circles.length; i++) {
         const d = distToCircle(p, circles[i].pos, circles[i].r);
         if(minLen > d) {
             minLen = d;
