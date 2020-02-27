@@ -87,6 +87,9 @@ function genShapes() {
     //Idx 0 will always be the light source, radious = 1 cos raytracing will not detect it
     circles.push({pos: new Point(5, 5), r: 1, color: {r: 355, g: 355, b: 355}});
     
+    //Idx 1 will always be repositioned to the player pos, radious = 1 cos raytracing will not detect it
+    circles.push({pos: player.pos, r: 1, color: {r: 355, g: 355, b: 355}});
+
     // Circlesa
     circles.push({pos: new Point(200, 60), r: 2, color: {r: 255, g: 0, b: 0}});
     circles.push({pos: new Point(70, 150), r: 5, color: {r: 0, g: 255, b: 0}});
@@ -168,6 +171,7 @@ function getMinDist(p, light) {
     let idx = null;
 
     for(i = light ? 1 : 0; i < circles.length; i++) {
+        if(!light && i == 1) continue;
         const d = distToCircle(p, circles[i].pos, circles[i].r);
         if(minLen > d) {
             minLen = d;
