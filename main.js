@@ -1,5 +1,6 @@
 var canvas, ctx,
-width = 700, height = 600
+width = 700, height = 600,
+sens = 0.003,
 
 circles = [],
 rectangles = [],
@@ -79,6 +80,18 @@ function init() {
     document.addEventListener('keyup', e => {
         delete keys[e.keyCode];
     });
+
+    document.addEventListener("mousemove", function(e) {
+        var movementX = e.movementX       ||
+                        e.mozMovementX    ||
+                        e.webkitMovementX ||
+                        0;
+
+        player.a += movementX*sens;
+      
+        // Imprime los valores delta del movimiento del mouse
+        //console.log("movementX=" + movementX, "movementY=" + movementY);
+      }, false);
 
     start();
 }
@@ -240,6 +253,22 @@ function color(r, g, b, a) {
     return "rgba(" + r + ", " + g + ", " + b + (a ? ", " + a : "") + ")";
 }
 
+function lockMouse() {
+    // Pointer lock
+    canvas.requestPointerLock = canvas.requestPointerLock ||
+			     canvas.mozRequestPointerLock ||
+			     canvas.webkitRequestPointerLock;
+
+    // Ask the browser to lock the pointer
+    canvas.requestPointerLock();
+}
+
 window.onload = function() {
+    var havePointerLock = 'pointerLockElement' in document ||
+    'mozPointerLockElement' in document ||
+    'webkitPointerLockElement' in document;
+
+    console.log("Pointer Lock: " + havePointerLock);
+
     init();
 }
