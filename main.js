@@ -9,10 +9,13 @@ time = 0,
 
 keys = [],
 
+calcs = 0,
+
 player = {
     pos: new Point(10, 10),
     a: 0,
     sens: 0.05,
+    fov: 40,
 
     select_mode: false,
     circle_i: -1,
@@ -20,6 +23,7 @@ player = {
     update: function() {        
         if(keys[87]) this.pos.add(Math.cos(this.a), Math.sin(this.a));
         if(keys[83]) this.pos.add(-Math.cos(this.a), -Math.sin(this.a));
+
         if(keys[65]) this.pos.add(-Math.cos(this.a+Math.PI/2), -Math.sin(this.a+Math.PI/2));
         if(keys[68]) this.pos.add(Math.cos(this.a+Math.PI/2), Math.sin(this.a+Math.PI/2));
 
@@ -30,7 +34,6 @@ player = {
             if(this.circle_i < 0 && this.circle_i > circles.length-1) {
                 this.select_mode = false;
                 this.circle_1 = -1;
-                console.log("Erorrsss");
             }
             let posX = this.pos.x + Math.cos(this.a)*(circles[this.circle_i].r+30)
             let posY = this.pos.y + Math.sin(this.a)*(circles[this.circle_i].r+30)
@@ -52,7 +55,7 @@ player = {
         if(!this.select_mode) {
             let circle = getMinDist(this.pos);
             if(circle) {
-                if(circle.len > 10) return;
+                if(circle.len > 100) return;
                 this.circle_i = circle.i;
                 this.select_mode = true;
             }
@@ -91,19 +94,24 @@ function init() {
       
         // Imprime los valores delta del movimiento del mouse
         //console.log("movementX=" + movementX, "movementY=" + movementY);
-      }, false);
+    }, false);
+    
+    document.getElementById("slider_fov").oninput = function() {
+        document.getElementById("fov_val").innerHTML = this.value;
+        player.fov = this.value;        
+    };
 
     start();
 }
 
 function genShapes() {
     //Idx 0 will always be the light source, radious = 1 cos raytracing will not detect it
-    circles.push({pos: new Point(5, 5), r: 1, color: {r: 355, g: 355, b: 355}});
+    circles.push({pos: new Point(5, 5), r: 1, color: {r: 255, g: 255, b: 255}});
     
     //Idx 1 will always be repositioned to the player pos, radious = 1 cos raytracing will not detect it
-    circles.push({pos: player.pos, r: 1, color: {r: 355, g: 355, b: 355}});
+    circles.push({pos: player.pos, r: 1, color: {r: 255, g: 255, b: 255}});
 
-    // Circlesa
+    // Circles
     circles.push({pos: new Point(200, 60), r: 2, color: {r: 255, g: 0, b: 0}});
     circles.push({pos: new Point(70, 150), r: 5, color: {r: 0, g: 255, b: 0}});
     circles.push({pos: new Point(300, 10), r: 40, color: {r: 0, g: 0, b: 255}});
@@ -139,7 +147,16 @@ function render() {
     ctx.fillStyle = 'black';
     ctx.fillRect(0, 0, width, height);
 
-    raytracingCalcAndRender(player.a, width, Math.PI/4);
+    raytracingCalcAndRender(player.a, width, player.fov * (Math.PI/180));
+    console.log(calcs);
+    calcs = 0;
+}
+
+function renderColumn(x, d, w) {
+    const constant = 5000;
+    let fov_on_h = 40/player.fov;
+    let h = constant/d;
+    ctx.fillRect(x, height/2 - h/2, w, h);
 }
 
 function raytracingCalcAndRender(a, rays, fov) {
@@ -157,8 +174,7 @@ function raytracingCalcAndRender(a, rays, fov) {
             ctx.fillStyle = color(collision.color.r - diff, collision.color.g - diff, collision.color.b - diff, (d/400)*-1+1);
             
         } else continue;
-        let pH = (height/d) * 6;
-        ctx.fillRect(j*pW, height/2 - pH/2, pW, pH);
+        renderColumn(j*pW, d, pW);
     }
 }
 
@@ -166,7 +182,7 @@ function traceRay(a, p, light) {
     let curr_dist = Number.MAX_VALUE;
     let target = new Point(Math.cos(a)*700, Math.sin(a)*700);
     target.add(p.x, p.y);
-    //renderLine(p, target);
+//    renderLine(p, target);
     let nextPos = new Point(p.x + Math.cos(a)*1.5, p.y + Math.sin(a)*1.5);
     let c = {};
     while(curr_dist > 1 && dist(p, nextPos) < 50000) {
@@ -230,9 +246,7 @@ function renderLine(p0, p1, color) {
 }
 
 function dist(p0, p1) {
-    const dx = p0.x - p1.x;
-    const dy = p0.y - p1.y;
-    return Math.sqrt(dx*dx+dy*dy);
+    return len(Point.sub(p0, p1));
 }
 
 function len(v) {
@@ -240,6 +254,7 @@ function len(v) {
 }
 
 function distToCircle(p, c, r) {
+    calcs++;
     return dist(p, c) - r;
 }
 
