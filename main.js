@@ -5,6 +5,8 @@ sens = 0.003,
 circles = [],
 rectangles = [],
 
+MIN_DIST = .2,
+
 time = 0,
 
 keys = [],
@@ -169,7 +171,7 @@ function traceRay(a, p, light) {
     //renderLine(p, target);
     let nextPos = new Point(p.x + Math.cos(a)*1.5, p.y + Math.sin(a)*1.5);
     let c = {};
-    while(curr_dist > 1 && dist(p, nextPos) < 50000) {
+    while(curr_dist > MIN_DIST && dist(p, nextPos) < 50000) {
         d = getMinDist(nextPos, light);
         curr_dist = d.len;
         c = d.color;
